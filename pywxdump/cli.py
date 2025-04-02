@@ -9,9 +9,13 @@ import argparse
 import os
 import sys
 import json
+import threading
+
+import schedule
 
 from pywxdump import *
 import pywxdump
+from pywxdump.job.msg_job import start_scheduler
 
 wxdump_ascii = r"""
 ██████╗ ██╗   ██╗██╗    ██╗██╗  ██╗██████╗ ██╗   ██╗███╗   ███╗██████╗ 
@@ -339,6 +343,8 @@ class MainUi(BaseSubMainClass):
         port = args.port
         debug = args.debug
         isopenBrowser = args.isOpenBrowser
+        print(f"[+] 开启消息同步模块")
+        start_scheduler()
 
         start_server(port=port, online=online, debug=debug, isopenBrowser=isopenBrowser)
 

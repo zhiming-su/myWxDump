@@ -125,6 +125,56 @@ class MicroHandler(DatabaseBase):
         return sessions
 
     @db_error
+    def get_session_list_v1(self):
+        """
+        获取会话列表
+        :return: 会话列表
+        """
+        sessions = {}
+        if not self.tables_exist(["Session", "Contact", "ContactHeadImgUrl"]):
+            return sessions
+        sql = (
+            "SELECT S.strUsrName,S.nOrder,S.nUnReadCount, S.strNickName, S.nStatus, S.nIsSend, S.strContent, "
+            "S.nMsgLocalID, S.nMsgStatus, S.nTime, S.nMsgType, S.Reserved2 AS nMsgSubType, C.UserName, C.Alias, "
+            "C.DelFlag, C.Type, C.VerifyFlag, C.Reserved1, C.Reserved2, C.Remark, C.NickName, C.LabelIDList, "
+            "C.ChatRoomType, C.ChatRoomNotify, C.Reserved5, C.Reserved6 as describe, C.ExtraBuf, H.bigHeadImgUrl "
+            "FROM (SELECT strUsrName, MAX(nTime) AS MaxnTime FROM Session GROUP BY strUsrName) AS SubQuery "
+            "JOIN Session S ON S.strUsrName = SubQuery.strUsrName AND S.nTime = SubQuery.MaxnTime "
+            "INNER join Contact C ON C.UserName = S.strUsrName and C.type =3 "
+            "LEFT JOIN ContactHeadImgUrl H ON C.UserName = H.usrName "
+            "WHERE S.strUsrName!='@publicUser'"
+            "ORDER BY S.nTime DESC;"
+        )
+
+        db_loger.info(f"get_session_list sql: {sql}")
+        ret = self.execute(sql)
+        if not ret:
+            return sessions
+
+        id2label = self.get_labels()
+        for row in ret:
+            (strUsrName, nOrder, nUnReadCount, strNickName, nStatus, nIsSend, strContent,
+             nMsgLocalID, nMsgStatus, nTime, nMsgType, nMsgSubType,
+             UserName, Alias, DelFlag, Type, VerifyFlag, Reserved1, Reserved2, Remark, NickName, LabelIDList,
+             ChatRoomType, ChatRoomNotify, Reserved5, describe, ExtraBuf, bigHeadImgUrl) = row
+
+            ExtraBuf = get_ExtraBuf(ExtraBuf)
+            LabelIDList = LabelIDList.split(",") if LabelIDList else []
+            LabelIDList = [id2label.get(int(label_id), label_id) for label_id in LabelIDList if label_id]
+            nTime = timestamp2str(nTime) if nTime else None
+
+            sessions[strUsrName] = {
+                "wxid": strUsrName, "nOrder": nOrder, "nUnReadCount": nUnReadCount, "strNickName": strNickName,
+                "nStatus": nStatus, "nIsSend": nIsSend, "strContent": strContent, "nMsgLocalID": nMsgLocalID,
+                "nMsgStatus": nMsgStatus, "nTime": nTime, "nMsgType": nMsgType, "nMsgSubType": nMsgSubType,
+                "LastReadedCreateTime": nTime,
+                "nickname": NickName, "remark": Remark, "account": Alias,
+                "describe": describe, "headImgUrl": bigHeadImgUrl if bigHeadImgUrl else "",
+                "ExtraBuf": ExtraBuf, "LabelIDList": tuple(LabelIDList)
+            }
+        return sessions
+
+    @db_error
     def get_recent_chat_wxid(self):
         """
         获取最近聊天的联系人

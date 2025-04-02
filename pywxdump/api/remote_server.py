@@ -36,6 +36,7 @@ def get_incremental_msgs(last_timestamp: Optional[int] = Body(None)):
     :param last_timestamp: 上次获取数据的时间戳
     :return: 增量聊天记录
     """
+    current_time = time.time()
     my_wxid = gc.get_conf(gc.at, "last")
     if not my_wxid:
         return ReJson(1001, body="my_wxid is required")
@@ -50,7 +51,7 @@ def get_incremental_msgs(last_timestamp: Optional[int] = Body(None)):
     else:
         msgs, users = db.get_msgs()
 
-    return ReJson(0, {"msg_list": msgs, "user_list": users})
+    return ReJson(0, {"msg_list": msgs, "user_list": users, "timestamp": current_time})
 
 # 是否初始化
 @rs_api.api_route('/is_init', methods=["GET", 'POST'])
@@ -95,6 +96,19 @@ def user_session_list():
     ret = db.get_session_list()
     return ReJson(0, list(ret.values()))
 
+@rs_api.api_route('/user_session_list_v1', methods=["GET", 'POST'])
+@error9999
+def user_session_list_v1():
+    """
+    获取联系人列表(排除了公众号、群聊、系统通知等非个人聊天信息)
+    :return:
+    """
+    my_wxid = gc.get_conf(gc.at, "last")
+    if not my_wxid: return ReJson(1001, body="my_wxid is required")
+    db_config = gc.get_conf(my_wxid, "db_config")
+    db = DBHandler(db_config, my_wxid=my_wxid)
+    ret = db.get_session_list_v1()
+    return ReJson(0, list(ret.values()))
 
 @rs_api.api_route('/user_labels_dict', methods=["GET", 'POST'])
 @error9999
