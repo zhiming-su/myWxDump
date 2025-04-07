@@ -31,3 +31,4 @@ dist-ssr
 /pywxdump/ui/web/assets/*
 /pywxdump/wxdump_work/
 /.venv/
+/pywxdump/@AutomationLog.txt

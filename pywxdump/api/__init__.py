@@ -43,8 +43,8 @@ def gen_fastapi_app(handler, origins=None):
             "http://localhost:5000",
             "http://127.0.0.1:5000",
             "http://localhost:8080",  # 开发环境的客户端地址"
-            # "http://0.0.0.0:5000",
-            # "*"
+            "http://0.0.0.0:5000",
+            "*"
         ]
     app.add_middleware(
         CORSMiddleware,
@@ -107,7 +107,7 @@ def gen_fastapi_app(handler, origins=None):
     return app
 
 
-def start_server(port=5000, online=False, debug=False, isopenBrowser=True,
+def start_server(port=5000, online=True, debug=False, isopenBrowser=True,
                  merge_path="", wx_path="", my_wxid="", ):
     """
     启动flask
@@ -198,8 +198,8 @@ def start_server(port=5000, online=False, debug=False, isopenBrowser=True,
         f"http://localhost:{port}",
         f"http://{host}:{port}",
         f"http://localhost:8080",  # 开发环境的客户端地址"
-        # f"http://0.0.0.0:{port}",
-        # "*"
+        f"http://0.0.0.0:{port}",
+        "*"
     ]
     app = gen_fastapi_app(file_handler, origins)
 
