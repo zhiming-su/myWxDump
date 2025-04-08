@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Optional
 
 from tests.test_http_parser import response
-from pywxdump.wxauto.wxauto import WeChat
+from pywxdump.mywxauto.wxauto import WeChat
 
 from pywxdump.api.local_server import get_real_time_msg, get_wxinfo, init_key, InitKeyRequest
 # Assuming get_incremental_msgs is defined in the same module or imported
