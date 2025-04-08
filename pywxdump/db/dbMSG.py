@@ -103,6 +103,7 @@ class MsgHandler(DatabaseBase):
             f"{sql_sub_type}"
             f"{sql_start_createtime}"
             f"{sql_end_createtime}"
+            #f"ORDER BY CreateTime ASC"#去除分页
             f"ORDER BY CreateTime ASC LIMIT ?,?"
         )
         param = param + (start_index, page_size)
@@ -111,6 +112,68 @@ class MsgHandler(DatabaseBase):
         #     full_sql = full_sql.replace('?', f"'{p}'", 1)
         # print(f"Executing SQL: {full_sql}")
         result = self.execute(sql, param)
+        if not result:
+            return [], []
+
+        result_data = (self.get_msg_detail(row, my_talker=my_talker) for row in result)
+        rdata = list(result_data)  # 转为列表
+        wxid_list = {d['talker'] for d in rdata}  # 创建一个无重复的 wxid 列表
+        return rdata, list(wxid_list)
+
+    @db_error
+    def get_msg_list_v1(self, wxids: list or str = "", start_index=0, page_size=500, msg_type: str = "",
+                     msg_sub_type: str = "", start_createtime=None, end_createtime=None, my_talker="我"):
+        """
+        获取聊天记录列表((排除了公众号、群聊、系统通知等非个人聊天信息))
+        :param wxids: [wxid]
+        :param start_index: 起始索引
+        :param page_size: 页大小
+        :param msg_type: 消息类型
+        :param msg_sub_type: 消息子类型
+        :param start_createtime: 开始时间
+        :param end_createtime: 结束时间
+        :param my_talker: 我
+        :return: 聊天记录列表 {"id": _id, "MsgSvrID": str(MsgSvrID), "type_name": type_name, "is_sender": IsSender,
+                    "talker": talker, "room_name": StrTalker, "msg": msg, "src": src, "extra": {},
+                    "CreateTime": CreateTime, }
+        """
+        if not self.tables_exist("MSG"):
+            return [], []
+
+        if isinstance(wxids, str) and wxids:
+            wxids = [wxids]
+        param = ()
+        sql_wxid, param = (f"AND StrTalker in ({', '.join('?' for _ in wxids)}) ",
+                           param + tuple(wxids)) if wxids else ("", param)
+        sql_type, param = ("AND Type=? ", param + (msg_type,)) if msg_type else ("", param)
+        sql_sub_type, param = ("AND SubType=? ", param + (msg_sub_type,)) if msg_type and msg_sub_type else ("", param)
+        sql_start_createtime, param = ("AND CreateTime>=? ", param + (start_createtime,)) if start_createtime else (
+            "", param)
+        sql_end_createtime, param = ("AND CreateTime<=? ", param + (end_createtime,)) if end_createtime else ("", param)
+
+        sql = (
+            "SELECT localId,TalkerId,MsgSvrID,m.Type,SubType,CreateTime,IsSender,Sequence,StatusEx,FlagEx,Status,"
+            "MsgSequence,StrContent,MsgServerSeq,StrTalker,DisplayContent,m.Reserved0,m.Reserved1,m.Reserved3,"
+            "m.Reserved4,m.Reserved5,m.Reserved6,CompressContent,BytesExtra,BytesTrans,m.Reserved2,"
+            "ROW_NUMBER() OVER (ORDER BY CreateTime ASC) AS id "
+            "FROM MSG m "
+            "INNER join (SELECT DISTINCT UserName FROM Contact WHERE type = 3) C ON C.UserName = m.StrTalker "
+            "WHERE 1=1 "
+            f"{sql_wxid}"
+            f"{sql_type}"
+            f"{sql_sub_type}"
+            f"{sql_start_createtime}"
+            f"{sql_end_createtime}"
+            # f"ORDER BY CreateTime ASC"#去除分页
+            f"ORDER BY CreateTime ASC LIMIT ?,?"
+        )
+        param = param + (start_index, page_size)
+        # full_sql = sql
+        # for p in param:
+        #     full_sql = full_sql.replace('?', f"'{p}'", 1)
+        # print(f"Executing SQL: {full_sql}")
+        result = self.execute(sql, param)
+
         if not result:
             return [], []
 

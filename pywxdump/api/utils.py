@@ -8,6 +8,7 @@
 import base64
 import json
 import os
+import pickle
 import random
 import re
 import string
@@ -268,3 +269,22 @@ def gen_base64(path):
 
 def random_str(num=16):
     return ''.join(random.sample(string.ascii_letters + string.digits, num))
+
+
+work_path = os.path.join(os.getcwd(), "wxdump_work")
+TIMESTAMP_FILE = os.path.join(work_path, 'last_timestamp.pkl')
+def save_msg_timestamp(timestamp: int):
+    with open(TIMESTAMP_FILE, 'wb') as f:
+        pickle.dump(timestamp, f)
+
+def load_msg_timestamp() -> int:
+    try:
+        with open(TIMESTAMP_FILE, 'rb') as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        # If the file does not exist, return the current timestamp
+        # current_time = int(time.time())
+        # offset = 24 * 60 * 60  # subtract one day
+        # current_time = int(time.time()) - offset
+        # save_timestamp(current_time)
+        return 0

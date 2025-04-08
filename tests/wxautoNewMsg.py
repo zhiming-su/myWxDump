@@ -1,5 +1,5 @@
 
-from pywxdump.wxauto.wxauto import WeChat
+from pywxdump.mywxauto.wxauto import WeChat
 
 wx = WeChat()
 

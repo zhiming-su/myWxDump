@@ -24,13 +24,13 @@ from pywxdump.db.utils import download_file, dat2img
 
 from .export import export_csv, export_json, export_html
 from .rjson import ReJson, RqJson
-from .utils import error9999, gc, asyncError9999, rs_loger
+from .utils import error9999, gc, asyncError9999, rs_loger, save_msg_timestamp, load_msg_timestamp
 
 rs_api = APIRouter()
 
 @rs_api.api_route('/incremental_msg_list', methods=["GET", "POST"])
 @error9999
-def get_incremental_msgs(last_timestamp: Optional[int] = Body(None)):
+def get_incremental_msgs():
     """
     获取增量聊天记录
     :param last_timestamp: 上次获取数据的时间戳
@@ -43,13 +43,16 @@ def get_incremental_msgs(last_timestamp: Optional[int] = Body(None)):
     db_config = gc.get_conf(my_wxid, "db_config")
 
     db = DBHandler(db_config, my_wxid=my_wxid)
-
-    if last_timestamp:
+    last_timestamp = load_msg_timestamp()
+    current_time = time.time()
+    if last_timestamp != 0 :
         #last_time = datetime.fromtimestamp(last_timestamp)
-        current_time = time.time()
-        msgs, users = db.get_msgs(start_createtime=last_timestamp, end_createtime=current_time)
+        msgs, users = db.get_msgs_v1(start_createtime=last_timestamp, end_createtime=current_time,page_size=5000000,)
     else:
-        msgs, users = db.get_msgs()
+        msgs, users = db.get_msgs_v1(end_createtime=current_time,page_size=5000000,)
+
+    if len(msgs) > 0:
+        save_msg_timestamp(int(current_time))
 
     return ReJson(0, {"msg_list": msgs, "user_list": users, "timestamp": current_time})
 

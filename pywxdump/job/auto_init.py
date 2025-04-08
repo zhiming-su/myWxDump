@@ -6,17 +6,10 @@ import time
 
 import comtypes
 import schedule
-import pickle
-from datetime import datetime
-from typing import Optional
-
-from tests.test_http_parser import response
-from pywxdump.mywxauto.wxauto import WeChat
 
 from pywxdump.api.local_server import get_real_time_msg, get_wxinfo, init_key, InitKeyRequest
-# Assuming get_incremental_msgs is defined in the same module or imported
-from pywxdump.api.remote_server import get_incremental_msgs
 from pywxdump.api.utils import ConfData
+from pywxdump.mywxauto.wxauto import WeChat
 
 work_path = os.path.join(os.getcwd(), "wxdump_work")
 TIMESTAMP_FILE = os.path.join(work_path, 'last_timestamp.pkl')
@@ -45,6 +38,7 @@ def auto_init_job():
         _scheduler_started = True
         auto_init_logger.info("Scheduler started")
 def wxauto_job():
+    #pass
     comtypes.CoInitialize() # 初始化 COM 库
     wx = WeChat()
 
@@ -79,7 +73,7 @@ def job():
                 wx_key = wx.get("key")
                 wx_path = wx.get("wx_dir")
                 if not wxid:
-                    auto_init_logger.error("获取微信ID失败")
+                    auto_init_logger.error(f"获取微信ID失败")
                 else:
                     my_wxid = gc.get_conf(gc.at, "last")
                     if not my_wxid:
