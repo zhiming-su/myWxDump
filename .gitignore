@@ -32,3 +32,4 @@ dist-ssr
 /pywxdump/wxdump_work/
 /.venv/
 /pywxdump/@AutomationLog.txt
+/tests/wxauto文件/
