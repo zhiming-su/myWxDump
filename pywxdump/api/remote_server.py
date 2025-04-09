@@ -7,6 +7,7 @@
 # -------------------------------------------------------------------------------
 import os
 import time
+import cv2
 import shutil
 from collections import Counter
 from datetime import datetime
@@ -182,7 +183,6 @@ def get_msgs(wxid: str = Body(...), start: int = Body(...), limit: int = Body(..
     msgs, users = db.get_msgs(wxids=wxid, start_index=start, page_size=limit)
     return ReJson(0, {"msg_list": msgs, "user_list": users})
 
-
 @rs_api.get('/imgsrc')
 @asyncError9999
 async def get_imgsrc(request: Request):
@@ -215,7 +215,8 @@ async def get_imgsrc(request: Request):
                 os.makedirs(os.path.dirname(imgsavepath))
             with open(imgsavepath, "wb") as f:
                 f.write(out_bytes)
-            return Response(content=out_bytes, media_type="image/jpeg")
+            return FileResponse(imgsavepath)
+            #return Response(content=out_bytes, media_type="image/jpeg")
         else:
             return ReJson(1001, body=f"{original_img_path} not exists")
     elif imgsrc.startswith("http://") or imgsrc.startswith("https://"):
