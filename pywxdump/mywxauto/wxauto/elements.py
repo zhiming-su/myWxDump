@@ -72,7 +72,7 @@ class WeChatBase:
             f"[{self._lang('图片')}]",
             f"[{self._lang('文件')}]",
             f"[{self._lang('语音')}]",
-            #f"[{self._lang('视频')}]",
+            f"[{self._lang('视频')}]",
         ]
 
         if not [i for i in msgs if i.content[:4] in msgtypes]:
@@ -90,19 +90,26 @@ class WeChatBase:
             elif msg.content.startswith(f"[{self._lang('语音')}]") and savevoice:
                 voice_text = self._get_voice_text(msg.control)
                 msg.content = voice_text if voice_text else msg.content
-            # elif msg.content.startswith(f"[{self._lang('视频')}]") and savevoice:
-            #     vedio_text = self._download_video(msg.control)
-            #     msg.content = vedio_text if vedio_text else msg.content
+            elif msg.content.startswith(f"[{self._lang('视频')}]") and savepic:
+                vedio_text = self._download_video(msg.control)
+                msg.content = vedio_text if vedio_text else msg.content
             msg.info[1] = msg.content
         return msgs
 
     def _download_video(self, msgitem):
         self._show()
         videocontrol = msgitem.ButtonControl(Name='')
+        #print(videocontrol)
         if not videocontrol.Exists(0.5):
             return None
         RollIntoView(self.C_MsgList, videocontrol)
         videocontrol.Click(simulateMove=False)
+        try:
+            videoobj = WeChatImage()
+            # savepath = imgobj.Save()
+            videoobj.Close()
+        except:
+            pass
         return "视频正在缓存！"
 
     def _download_pic(self, msgitem):
