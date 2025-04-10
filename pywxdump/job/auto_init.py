@@ -4,6 +4,7 @@ import sys
 import threading
 import time
 
+import _ctypes
 import comtypes
 import schedule
 
@@ -45,12 +46,28 @@ def wxauto_job():
     # 获取下一条新消息
 
     while True:
-        msgs = wx.GetNextNewMessage(
-            savepic=True,  # 保存图片
-            savefile=False,  # 保存文件
-            savevoice=False)  # 保存语音转文字内容
-        if msgs:
-            auto_init_logger.info(f"最新微信消息: {msgs}")
+        try:
+
+            msgs = wx.GetNextNewMessage(
+                savepic=True,  # 保存图片
+                savefile=False,  # 保存文件
+                savevoice=False)  # 保存语音转文字内容
+            if msgs:
+                auto_init_logger.info(f"最新微信消息: {msgs}")
+        except _ctypes.COMError as e:
+            try:
+                auto_init_logger.error(f"COM 调用失败: {e}")
+                wx = WeChat()  # 重新初始化微信��口对象
+            except Exception as inner_e:
+                auto_init_logger.error(f"处理 COMError 时发生错误: {inner_e}")
+            time.sleep(10)  # 等待一段时间后重试
+        except Exception as e:
+            try:
+                auto_init_logger.error(f"未知错误: {e}")
+            except Exception as inner_e:
+                auto_init_logger.error(f"处理未知错误时发生错误: {inner_e}")
+            time.sleep(10)  # 等待一段时间后重试
+
 
 def job():
     #检查当前微信数量
