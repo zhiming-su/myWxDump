@@ -1,0 +1,16 @@
+{
+  "name": "wxdump",
+  "output": "dist",
+  "options": [
+    "--onefile",
+    "--icon=app.ico",
+    "--add-data=pywxdump/WX_OFFS.json;pywxdump",
+    "--add-data=pywxdump/ui/web;pywxdump/ui/web",
+    "--add-data=pywxdump/wx_core/tools;pywxdump/wx_core/tools",
+    "--hidden-import=uiautomation",
+    "--hidden-import=comtypes",
+    "--hidden-import=comtypes.automation",
+    "--hidden-import=comtypes.typeinfo",
+    "--hidden-import=comtypes.stream"
+  ]
+}

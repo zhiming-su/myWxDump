@@ -1,5 +1,8 @@
 # 用户指南 本地源码安装
 pyinstaller -F pywxdump/cli.py -n wxdump --hidden-import=uiautomation --hidden-import=comtypes --hidden-import=comtypes.stream --add-data "pywxdump/WX_OFFS.json;pywxdump" --add-data "pywxdump/ui/web;pywxdump/ui/web" --add-data "pywxdump/wx_core/tools;pywxdump/wx_core/tools" --icon app.ico
+# pyarmor gen --pack  onefile --recursive -b  0a:00:27:00:00:04 -e 2025-01-07 .\byZs.py
+# pyarmor g --recursive .
+pyarmor gen --pack .\wxdump.spec -r .\pywxdump\cli.py
 ## 小白教程（大佬请看下面）
 
 ### 1. 安装
