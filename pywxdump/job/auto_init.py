@@ -11,6 +11,7 @@ import schedule
 from pywxdump.api.local_server import get_real_time_msg, get_wxinfo, init_key, InitKeyRequest
 from pywxdump.api.utils import ConfData
 from pywxdump.mywxauto.wxauto import WeChat
+import pywxdump.api.remote_server as remote_server
 
 work_path = os.path.join(os.getcwd(), "wxdump_work")
 TIMESTAMP_FILE = os.path.join(work_path, 'last_timestamp.pkl')
@@ -29,6 +30,8 @@ handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s:     %(messa
 auto_init_logger.addHandler(handler)
 gc: ConfData = ConfData()
 
+wx = None  # 定义全局变量
+
 def auto_init_job():
     global _scheduler_started, _job_instance
     if not _scheduler_started:
@@ -40,10 +43,15 @@ def auto_init_job():
         auto_init_logger.info("Scheduler started")
 def wxauto_job():
     #pass
-    comtypes.CoInitialize() # 初始化 COM 库
-    wx = WeChat()
 
-    # 获取下一条新消息
+    global wx  # 声明为全局变量
+    try:
+        comtypes.CoInitialize()
+        wx = WeChat()
+        auto_init_logger.info("WeChat 对象初始化成功")
+        remote_server.wx=wx
+    except Exception as e:
+        auto_init_logger.error(f"微信初始化失败: {e}")
 
     while True:
         try:
@@ -58,6 +66,7 @@ def wxauto_job():
             try:
                 auto_init_logger.error(f"COM 调用失败: {e}")
                 wx = WeChat()  # 重新初始化微信��口对象
+                remote_server.wx = wx
             except Exception as inner_e:
                 auto_init_logger.error(f"处理 COMError 时发生错误: {inner_e}")
             time.sleep(10)  # 等待一段时间后重试
@@ -81,19 +90,19 @@ def job():
             auto_init_logger.error("没有检测到微信")
         else:
             auto_init_logger.info(f"检测到微信数量: {len(wx_list)}")
-            wx = wx_list[0]
-            if not wx:
+            wx_data = wx_list[0]
+            if not wx_data:
                 auto_init_logger.error("获取微信信息失败")
             else:
                 # 获取微信ID
-                wxid = wx.get("wxid")
-                wx_key = wx.get("key")
-                wx_path = wx.get("wx_dir")
+                wxid = wx_data.get("wxid")
+                wx_key = wx_data.get("key")
+                wx_path = wx_data.get("wx_dir")
                 if not wxid:
                     auto_init_logger.error(f"获取微信ID失败")
                 else:
                     my_wxid = gc.get_conf(gc.at, "last")
-                    if not my_wxid:
+                    if not my_wxid or wxid != my_wxid:
                         #return ReJson(1001, body="my_wxid is required")
                         auto_init_logger.info(f"当前微信ID: {wxid},开始初始化数据！")
                         #开始初始化微信数据库

@@ -28,6 +28,31 @@ from .rjson import ReJson, RqJson
 from .utils import error9999, gc, asyncError9999, rs_loger, save_msg_timestamp, load_msg_timestamp
 
 rs_api = APIRouter()
+wx = None  # 定义全局变量
+
+@rs_api.api_route('/auto_reply', methods=["GET","POST"])
+@error9999
+def auto_reply(nickName: str = Body(..., embed=True), message: str = Body(..., embed=True)):
+    """
+    自动回复微信消息
+    :param wxid: 目标微信 ID
+    :param message: 回复的消息内容
+    :return:
+    """
+    #print(wx)
+    if not wx:
+        return ReJson(1001, body="微信未初始化")
+    try:
+        print(wx)
+        # 调用 wx 的方法发送消息
+        wx.SendMsg(msg=message, who=nickName)
+        #result = wx.SendText(wxid, message)
+
+        return ReJson(0, body="消息发送成功")
+
+    except Exception as e:
+        rs_loger.error(f"自动回复失败: {e}", exc_info=True)
+        return ReJson(9999, body=f"自动回复失败: {str(e)}")
 
 @rs_api.api_route('/incremental_msg_list', methods=["GET", "POST"])
 @error9999
