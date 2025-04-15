@@ -1,7 +1,7 @@
 [BUG]: out of license
 
 ## Command Line
-C:\Users\Administrator\AppData\Local\Programs\Python\Python312\Scripts\pyarmor gen --pack .\wxdump.spec -r .\pywxdump\
+C:\Users\Administrator\AppData\Local\Programs\Python\Python312\Scripts\pyarmor gen --pack onefile .\pywxdump\cli.py
 
 ## Environments
 Python 3.12.8

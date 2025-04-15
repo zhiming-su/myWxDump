@@ -124,37 +124,160 @@ class WeChat(WeChatBase):
                 item.Click(simulateMove=False)
                 break
             self.SessionBox.WheelDown(wheelTimes=3, interval=0)
-    def GetMoments(self, timeout=10):
-        """
-        Retrieve Friend Circle (朋友圈) posts.
 
-        Returns:
-            list: A list of moments posts data (e.g. title or text).
-        """
+    def find_nested_panes(self, control, depth=0, max_depth=10, pane_list=None):
+        """递归查找嵌套的控件，返回包含控件和深度的列表"""
+        if pane_list is None:
+            pane_list = []
+        if depth > max_depth:
+            return pane_list
+        try:
+            pane_list.append({"control": control, "depth": depth})
+            for child in control.GetChildren():
+                self.find_nested_panes(child, depth + 1, max_depth, pane_list)
+        except Exception as e:
+            print("  " * depth + f"Error accessing control: {e}")
+        return pane_list
+
+    def restore_focus(self, moments_win):
+        """恢复朋友圈窗口的焦点"""
+        try:
+            if moments_win.Exists(0.1):
+                # 使用win32gui强制置前
+                hwnd = moments_win.NativeWindowHandle
+                if hwnd:
+                    win32gui.SetForegroundWindow(hwnd)
+                    win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
+                                          win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+                    win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0,
+                                          win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+                #moments_win.SetFocus()
+                moments_win.Click(simulateMove=False)
+                print("焦点已恢复到朋友圈窗口")
+            else:
+                print("朋友圈窗口不存在，尝试重新定位")
+                moments_win = uia.WindowControl(ClassName='SnsWnd', searchDepth=1, Name='朋友圈')
+                #moments_win.SetFocus()
+        except Exception as e:
+            print(f"恢复焦点失败: {e}")
+        return moments_win
+
+    def GetMoments(self, timeout=10, max_posts=10, scroll_delay=2):
         self._show()
-        # Click the Moments button to switch to the Friend Circle page
-        self.A_MomentsIcon.Click(simulateMove=False)
 
-        t0 = time.time()
-        # Wait for the Moments window to appear.
-        # Here, 'WeChatMomentsWnd' is used as an example ClassName.
-        moments_win = uia.WindowControl(ClassName='WeChatMomentsWnd', searchDepth=1)
-        while not moments_win.Exists(0.5):
-            if time.time() - t0 > timeout:
-                raise TimeoutError("获取朋友圈窗口超时！")
-            time.sleep(0.2)
-
-        # Assume the moments posts are in a ListControl inside the Moments window.
-        posts_control = moments_win.ListControl()
         posts = []
-        # Iterate through the child controls as posts.
-        for post in posts_control.GetChildren():
-            # Extract a property (e.g., Name) to represent the post.
-            posts.append(post.Name)
+        processed_posts = set()
 
-        # Optionally switch back to the chat page.
-        self.SwitchToChat()
+        while len(posts) < max_posts:
+            try:
+                self.A_MomentsIcon.Click(simulateMove=False)
+
+                t0 = time.time()
+                moments_win = uia.WindowControl(ClassName='SnsWnd', searchDepth=1, Name='朋友圈')
+                while not moments_win.Exists(0.5):
+                    if time.time() - t0 > timeout:
+                        raise TimeoutError("获取朋友圈窗口超时！")
+                    time.sleep(0.2)
+
+                posts_control = moments_win.ListControl(Name='朋友圈')
+
+                # 获取控件树
+                all_post_items = self.find_nested_panes(posts_control)
+                current_post = None
+                found_first_post = False
+
+                for item in all_post_items:
+                    control = item["control"]
+                    depth = item["depth"]
+
+                    if control.ControlTypeName == "ListItemControl" and depth == 1 and not found_first_post:
+                        current_post = {"username": None, "text": None, "images": [], "time": None}
+                        found_first_post = True
+
+                    if current_post is None or not found_first_post:
+                        continue
+
+                    if control.ControlTypeName == "ButtonControl" and depth in [5, 6]:
+                        if control.Name and control.Name not in ["评论", "图片"]:
+                            current_post["username"] = control.Name
+
+                    if control.ControlTypeName == "TextControl" and depth == 5:
+                        current_post["text"] = control.Name
+
+                    if control.ControlTypeName == "TextControl" and depth == 6:
+                        if re.match(r"\d+\s*(分钟|小时|天)前", control.Name):
+                            current_post["time"] = control.Name
+
+                    if control.ControlTypeName == "ButtonControl" and control.Name == "图片" and depth == 7:
+                        try:
+                            save_path = self.save_image(control)
+                            if save_path:  # 仅添加有效路径
+                                current_post["images"].append(save_path)
+                        except Exception as e:
+                            print(f"保存图片失败: {e}")
+                            continue
+
+                if current_post is not None:
+                    post_id = f"{current_post.get('username', '')}_{current_post.get('text', '')}_{current_post.get('time', '')}"
+                    if any(current_post.values()) and post_id not in processed_posts:
+                        posts.append(current_post)
+                        processed_posts.add(post_id)
+                        print(f"获取帖子: {current_post}")
+
+                if not found_first_post:
+                    print("没有找到新帖子，停止获取")
+                    break
+
+                # 滚动前记录状态
+                prev_items = self.find_nested_panes(posts_control)
+                prev_post_ids = {f"{item['control'].Name}_{item['depth']}" for item in prev_items
+                                 if item["control"].ControlTypeName == "ListItemControl" and item["depth"] == 1}
+                print(f"滚动前帖子ID: {prev_post_ids}")
+
+                # 模拟滚动
+                try:
+                    moments_win = self.restore_focus(moments_win)
+                    # 尝试多种滚动方法
+                    moments_win.WheelDown(3)  # 增加幅度
+                    moments_win.SendKeys("{DOWN 3}", waitTime=0.1)  # 模拟键盘
+                    time.sleep(scroll_delay)
+                except Exception as e:
+                    print(f"滚动失败: {e}")
+                    break
+
+                # 验证滚动
+                new_items = self.find_nested_panes(posts_control)
+                new_post_ids = {f"{item['control'].Name}_{item['depth']}" for item in new_items
+                                if item["control"].ControlTypeName == "ListItemControl" and item["depth"] == 1}
+                print(f"滚动后帖子ID: {new_post_ids}")
+                if new_post_ids == prev_post_ids:
+                    print("滚动后内容未变化，停止获取")
+                    break
+
+            except Exception as e:
+                print(f"处理控件时出错: {e}")
+                break
+
+        print(f"总计获取 {len(posts)} 条帖子")
+        for post in posts:
+            print(f"帖子: {post}")
+
         return posts
+
+    def save_image(self, image_control):
+        """
+        保存图片控件到指定路径。
+        """
+        try:
+            image_control.Click(simulateMove=False)
+            time.sleep(0.5)  # 添加延迟确保点击生效
+            imgobj = WeChatImage()
+            savepath = imgobj.Save()
+            imgobj.Close()
+            return savepath
+        except Exception as e:
+            print(f"Error saving image: {e}")
+            return None
 
     def GetFriendDetails(self, n=None, timeout=0xFFFFF):
         """获取所有好友详情信息
@@ -186,7 +309,7 @@ class WeChat(WeChatBase):
             if n and len(details) >= n:
                 return details
 
-            
+
     def GetSessionAmont(self, SessionItem):
         """获取聊天对象名和新消息条数
         
