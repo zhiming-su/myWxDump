@@ -34,3 +34,4 @@ dist-ssr
 /pywxdump/@AutomationLog.txt
 /tests/wxauto文件/
 /pywxdump/wxauto文件/
+/.pyarmor/

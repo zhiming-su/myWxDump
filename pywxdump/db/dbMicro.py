@@ -140,7 +140,7 @@ class MicroHandler(DatabaseBase):
             "C.ChatRoomType, C.ChatRoomNotify, C.Reserved5, C.Reserved6 as describe, C.ExtraBuf, H.bigHeadImgUrl "
             "FROM (SELECT strUsrName, MAX(nTime) AS MaxnTime FROM Session GROUP BY strUsrName) AS SubQuery "
             "JOIN Session S ON S.strUsrName = SubQuery.strUsrName AND S.nTime = SubQuery.MaxnTime "
-            "INNER join Contact C ON C.UserName = S.strUsrName and C.type =3 "
+            "INNER join Contact C ON C.UserName = S.strUsrName and (C.type =3 or C.type=2) and C.VerifyFlag = 0 "
             "LEFT JOIN ContactHeadImgUrl H ON C.UserName = H.usrName "
             "WHERE S.strUsrName!='@publicUser'"
             "ORDER BY S.nTime DESC;"
