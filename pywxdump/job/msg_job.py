@@ -8,7 +8,7 @@ import pickle
 from datetime import datetime
 from typing import Optional
 
-from tests.test_http_parser import response
+#from tests.test_http_parser import response
 
 from pywxdump.api.local_server import get_real_time_msg
 # Assuming get_incremental_msgs is defined in the same module or imported

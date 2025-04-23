@@ -1,21 +1,21 @@
-from wxauto import WeChat
+from pywxdump.mywxauto.wxauto import WeChat
 import time
 
 wx = WeChat()
 
 # 首先设置一个监听列表，列表元素为指定好友（或群聊）的昵称
 listen_list = [
-    'Su',
+    'Su'
 ]
-wx.GetListenMessage()
+#wx.GetListenMessage()
 wait = 3
 # 然后调用`AddListenChat`方法添加监听对象，其中可选参数`savepic`为是否保存新消息图片
-# for i in listen_list:
-#     wx.AddListenChat(who=i,
-#                      savepic=True,  # 保存图片
-#                      savefile=True,  # 保存文件
-#                      savevoice=True)  # 保存语音转文字内容
-#
+for i in listen_list:
+    wx.AddListenChat(who=i,
+                     savepic=True,  # 保存图片
+                     savefile=True,  # 保存文件
+                     savevoice=True)  # 保存语音转文字内容
+#wx.GetNextNewMessage(
 #     wait = 3  # 设置3秒查看一次是否新消息
 while True:
     try:

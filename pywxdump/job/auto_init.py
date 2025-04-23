@@ -53,29 +53,29 @@ def wxauto_job():
     except Exception as e:
         auto_init_logger.error(f"微信初始化失败: {e}")
 
-    while True:
-        try:
-
-            msgs = wx.GetNextNewMessage(
-                savepic=True,  # 保存图片
-                savefile=False,  # 保存文件
-                savevoice=False)  # 保存语音转文字内容
-            if msgs:
-                auto_init_logger.info(f"最新微信消息: {msgs}")
-        except _ctypes.COMError as e:
-            try:
-                auto_init_logger.error(f"COM 调用失败: {e}")
-                wx = WeChat()  # 重新初始化微信��口对象
-                remote_server.wx = wx
-            except Exception as inner_e:
-                auto_init_logger.error(f"处理 COMError 时发生错误: {inner_e}")
-            time.sleep(10)  # 等待一段时间后重试
-        except Exception as e:
-            try:
-                auto_init_logger.error(f"未知错误: {e}")
-            except Exception as inner_e:
-                auto_init_logger.error(f"处理未知错误时发生错误: {inner_e}")
-            time.sleep(10)  # 等待一段时间后重试
+    # while True:
+    #     try:
+    #
+    #         msgs = wx.GetNextNewMessage(
+    #             savepic=True,  # 保存图片
+    #             savefile=False,  # 保存文件
+    #             savevoice=False)  # 保存语音转文字内容
+    #         if msgs:
+    #             auto_init_logger.info(f"最新微信消息: {msgs}")
+    #     except _ctypes.COMError as e:
+    #         try:
+    #             auto_init_logger.error(f"COM 调用失败: {e}")
+    #             wx = WeChat()  # 重新初始化微信��口对象
+    #             remote_server.wx = wx
+    #         except Exception as inner_e:
+    #             auto_init_logger.error(f"处理 COMError 时发生错误: {inner_e}")
+    #         time.sleep(10)  # 等待一段时间后重试
+    #     except Exception as e:
+    #         try:
+    #             auto_init_logger.error(f"未知错误: {e}")
+    #         except Exception as inner_e:
+    #             auto_init_logger.error(f"处理未知错误时发生错误: {inner_e}")
+    #         time.sleep(10)  # 等待一段时间后重试
 
 
 def job():
